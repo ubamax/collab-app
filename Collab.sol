@@ -23,6 +23,13 @@ contract Collab {
     mapping(uint256 => Group) internal groups;
     mapping(uint256 => Talk[]) internal talks;
 
+    //events
+    event GroupCreated(uint256 indexed groupId);
+    event TalkCreated(address indexed sender, string message, uint256 time);
+    event TalkDeleted(uint256 indexed groupId, uint256 talkId);
+    event JoinedGroup(uint256 indexed groupId, address indexed participant);
+    event LeaveGroup(uint256 indexed groupId, address indexed participant);
+
     modifier validIdentifier(uint256 _identifier) {
         require(_identifier < index, "Invalid identifier entered");
         _;
@@ -43,6 +50,7 @@ contract Collab {
         uint256 id = index;
         index++;
         joinGroup(id);
+        emit GroupCreated(id);
     }
 
     /*
@@ -54,6 +62,7 @@ contract Collab {
     {
         Talk memory talk = Talk(msg.sender, _message, block.timestamp);
         talks[_identifier].push(talk);
+        emit TalkCreated(talk.from, talk.message, talk.timestamp);
     }
 
     /*
@@ -67,6 +76,7 @@ contract Collab {
         if (talk[_talkIndex].from == msg.sender) {
             talk[_talkIndex] = talk[talk.length - 1];
             talk.pop();
+            emit TalkDeleted(_identifier, _talkIndex);
         }
     }
 
@@ -100,23 +110,25 @@ contract Collab {
         // add msg.sender if not already joined
         if (alreadyIn == false) {
             grp.participants.push(msg.sender);
+            emit JoinedGroup(_identifier, msg.sender);
         }
     }
 
     /*
      *   Exit a group conversation
      */
-    function leaveGroup(uint256 _idenfifier)
+    function leaveGroup(uint256 _identifier)
         public
-        validIdentifier(_idenfifier)
+        validIdentifier(_identifier)
     {
-        Group storage grp = groups[_idenfifier];
+        Group storage grp = groups[_identifier];
         for (uint256 i = 0; i < grp.participants.length; i++) {
             if (grp.participants[i] == msg.sender) {
                 grp.participants[i] = grp.participants[
                     grp.participants.length - 1
                 ];
                 grp.participants.pop();
+                emit LeaveGroup(_identifier, msg.sender);
                 break;
             }
         }
